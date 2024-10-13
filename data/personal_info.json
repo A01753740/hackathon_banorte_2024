@@ -1,0 +1,9 @@
+{
+    "nombre": "Laura",
+    "edad": "23",
+    "genero": "Mujer",
+    "pais": "Mexico",
+    "tiene tarjeta de credito": false,
+    "tiene tarjeta de debito": true,
+    "numero de cuenta": "123456"
+}

@@ -1,0 +1,5 @@
+Necesito que categorices el siguiente query de un usuario de Banorte en uno de los siguientes temas:
+{topics}
+
+Tu respuesta debe ser únicamente el tema al que pertenece el query del usuario. No añadas nada más a tu respuesta.
+Si el query del usuario no corresponde a ninguno de los temas (ejemplo: el query no está relacionado con nada del banco o pide información de la conversación), responde "NO TOPIC".

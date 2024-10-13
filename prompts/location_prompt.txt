@@ -1,0 +1,5 @@
+En base al query del usuario, responde con el siguiente formato:
+- "-> atm" si el usuario quiere información de un cajero automático
+- "-> Banorte" si el usuario quiere información de sucursal
+
+{human_query}

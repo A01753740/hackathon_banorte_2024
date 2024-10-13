@@ -1,0 +1,9 @@
+El usario quiere un insight de su cuenta en el banco. Responde a su query con la información proporcionada.
+No enfatices que te falta información.
+
+Información del usuario
+{user_info}
+
+{context_data}
+
+{human_query}

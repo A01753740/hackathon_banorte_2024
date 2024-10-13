@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OLL-E</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=KEY&callback=console.debug&libraries=maps,marker&v=beta"></script>
+    <link rel="shortcut icon" href="https://play-lh.googleusercontent.com/vgz8TNE0scnnAXDlUcb_ThY8OqfIchiCATM3j1MZtF--8cY0rpPmNDlQlppt65T5jran" type="image/x-icon">
+    </head>
+</head>
+<body>
+    <div class="header">
+        <img src="https://images.squarespace-cdn.com/content/v1/54f3d2f6e4b080da0ca5b49f/1620224130963-OHAX2CNK35YP8WC9DZ1D/logo+banorte+gris.png?format=500w" alt="">
+        <div class="titulo">
+            <h1>OLL-E</h1>
+        </div>
+    </div>
+    <div class="top-container">
+        <div class="container" id="container">
+            <div class="chat">
+                <div id="chatbox"></div>
+                <div class="input">
+                    <form id="messageForm">
+                        <input type="text" id="messageInput" placeholder="Escribe tu mensaje">
+                        <button type="submit">Enviar</button>
+                    </form>
+                </div>   
+            </div>
+            <div id="plot" style="width: 500px; height: 570px;" class="chat"></div>
+        </div>
+    <script>
+
+let latitud;
+let longitud;
+let map; // Declarar variable global para el mapa
+let directionsService; // Servicio de direcciones
+let directionsRenderer; // Renderizador de direcciones
+
+// Función para obtener la ubicación actual
+function obtenerUbicacion() {
+    return new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+        } else {
+            reject("La geolocalización no es compatible con este navegador.");
+        }
+    });
+}
+
+// Función principal
+async function main(tipo) {
+    try {
+        const position = await obtenerUbicacion();
+        latitud = position.coords.latitude;
+        longitud = position.coords.longitude;
+
+        // Inicializar el mapa
+        inicializarMapa(latitud, longitud);
+
+        // Buscar el cajero automático más cercano
+        const cajero = await buscarCajeroMasCercano(latitud, longitud, tipo);
+        if (cajero) {
+            // Obtener instrucciones para llegar al cajero
+            const instrucciones = await obtenerInstrucciones({ lat: latitud, lng: longitud }, cajero.geometry.location);
+            console.log('Instrucciones para llegar al cajero:', instrucciones);
+
+            // Dibujar la ruta en el mapa
+            dibujarRuta(instrucciones);
+        }
+    } catch (error) {
+        console.error(`Error al obtener la ubicación: ${error}`);
+    }
+}
+
+// Función para inicializar el mapa
+function inicializarMapa(lat, lng) {
+    const container = document.getElementById('plot');
+    
+    // Crear el mapa
+    map = new google.maps.Map(container, {
+        center: { lat: lat, lng: lng },
+        zoom: 15,
+    });
+
+    // Crear el marcador para la ubicación actual
+    new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        title: "Mi ubicación",
+    });
+
+    // Inicializar el servicio de direcciones y el renderizador
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer();
+    directionsRenderer.setMap(map); // Vincular el renderizador al mapa
+}
+
+// Función para buscar el cajero automático más cercano
+async function buscarCajeroMasCercano(lat, lng, tipo) {
+    const response = await fetch(`/buscar_cajero?lat=${lat}&lng=${lng}&tipo=${tipo}`);
+    const data = await response.json();
+
+    if (data.results && data.results.length > 0) {
+        return data.results[0]; // Retorna el primer cajero encontrado
+    } else {
+        throw new Error('No se encontraron cajeros automáticos cercanos.');
+    }
+}
+
+// Función para obtener direcciones
+async function obtenerInstrucciones(origen, destino) {
+    const response = await fetch(`/obtener_direccion?origin=${origen.lat},${origen.lng}&destination=${destino.lat},${destino.lng}`);
+    const data = await response.json();
+
+    if (data.routes && data.routes.length > 0) {
+        return data.routes[0].legs[0]; // Retorna las instrucciones del primer tramo
+    } else {
+        throw new Error('No se encontraron rutas.');
+    }
+}
+
+// Función para dibujar la ruta en el mapa
+function dibujarRuta(instrucciones) {
+    const route = {
+        origin: { lat: latitud, lng: longitud }, // Ubicación actual
+        destination: { lat: instrucciones.end_location.lat, lng: instrucciones.end_location.lng }, // Cajero
+        travelMode: google.maps.TravelMode.DRIVING, // Modo de transporte
+    };
+
+    directionsService.route(route, (result, status) => {
+        if (status === google.maps.DirectionsStatus.OK) {
+            directionsRenderer.setDirections(result); // Renderizar la ruta
+        } else {
+            console.error('Error al obtener la ruta:', status);
+        }
+    });
+}
+
+        function crearGrafica(tipo, x, y) {
+            document.getElementById('plot').innerHTML = '';
+            if (tipo == "pie") {
+                    const trace3 = {
+                    labels: x,
+                    values: y,
+                    showlegend: false,
+                    type: 'pie',
+                };
+                const layout3 = {
+                yaxis: {
+                    showgrid: false,
+                    zeroline: false,
+                    showline: false,
+                    showticklabels: false
+                },               
+            };
+            Plotly.newPlot('plot', [trace3], layout3);
+            }
+            if(tipo == "bar"){
+                let trace3 = {
+                x: x,
+                y: y,
+                showlegend: false,
+                type: 'bar',
+                marker: {
+                    color: 'rgb(255,168,242)',
+                    opacity: 0.6,
+                    line: {
+                    color: '#650000',
+                    width: 1.5
+                    }
+                }
+            };
+            const layout3 = {
+                showgrid: false
+               };
+               Plotly.newPlot('plot', [trace3], layout3);
+            }
+            if(tipo == "line"){
+                let trace3 = {
+                x: x,
+                y: y,
+                showlegend: false,
+                type: 'scatter',
+                line: {
+                    color: '#650000',
+                    width: 1
+                }
+            };
+            const layout3 = {
+                yaxis: {
+                showgrid: false,
+                zeroline: false,
+                showline: false,
+                showticklabels: false
+                },           
+            };
+               Plotly.newPlot('plot', [trace3], layout3);
+            }
+        }
+
+        $(document).ready(function() {
+            $('#messageForm').submit(function(event) {
+                event.preventDefault();
+
+                var message = $('#messageInput').val();
+
+                $('#chatbox').append('<div class="client">' + message + '</div>');
+                $('#chatbox').append('<div class="server">' + "Pensando..." + '</div>');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/chat',
+                    contentType: 'application/json',
+                    data: JSON.stringify({'message': message}),
+                    success: function(response) {
+                        $('#chatbox').find('.server:contains("Pensando...")').remove();
+                        $('#chatbox').append('<div class="server">' + response.response + '</div>');
+                        // Verifica si response.dashboard no es false
+                        if (response.dashboard !== "False") {
+                            // Aquí puedes realizar la acción que deseas
+                            let inputString = response.dashboard;
+
+                            inputString = inputString.replace(/'/g, '"');
+
+                            let result = JSON.parse(inputString);    
+                            crearGrafica(result[0], result[1], result[2])
+                        } 
+                        else if(response.map !== "False"){
+                            main(response.map);
+                        }
+                        else {
+                            console.log('Dashboard está deshabilitado.');
+                        }
+                    },                        
+                });
+
+                // Limpiar el campo de entrada
+                $('#messageInput').val('');
+            });
+        });    
+    </script>
+</body>
+</html>
